@@ -7,6 +7,7 @@ Hotspots Report is a command-line tool that analyzes a code repository to identi
 ## What are Hotspots?
 
 Hotspots are files or sections of a codebase that are likely candidates for refactoring. These may be identified through various metrics such as:
+
 - High complexity
 - Frequent changes
 - Code smells
@@ -15,11 +16,22 @@ Hotspots are files or sections of a codebase that are likely candidates for refa
 
 ## Workflow
 
-The tool operates in three steps:
+The tool operates in two main phases:
+
+### Phase 1: Hotspot Detection and Analysis
 
 1. **Find Hotspots**: Identifies hotspots in the codebase using commit frequency analysis.
-2. **Analyze Hotspots**: Performs analysis on each identified hotspot.
-3. **Output Analysis**: Generates an analysis file based on the analysis results.
+2. **Analyze Hotspots**: Performs analysis on each identified hotspot (LOC counting, coupling analysis).
+3. **Output Analysis**: Generates a JSON file with hotspot data and coupling relationships.
+
+### Phase 2: AI-Powered Refactoring Recommendations
+
+A separate analysis script (`hotspots-analyze`) uses an AI agent to:
+
+1. Read the JSON output from Phase 1
+2. Analyze hotspot clusters and coupling relationships
+3. Generate human-readable refactoring recommendations
+4. Identify high-risk areas and priority refactoring opportunities
 
 ## Hotspot Detection Method
 
@@ -38,13 +50,13 @@ The tool finds hotspots by analyzing commit frequency within a specified time pe
    - Lines containing only whitespace
    - Comment lines (both single-line and block comments)
    - Only actual lines of code are counted
-   
+
    The tool reads each file directly and counts LOC by:
    - Parsing the file content line by line
    - Removing comments based on file extension (supports JavaScript, TypeScript, Python, Java, C/C++, Go, Rust, HTML, CSS, SQL, and many other languages)
    - Handling both single-line comments (e.g., `//`, `#`) and block comments (e.g., `/* */`, `<!-- -->`)
    - Counting only non-empty, non-comment lines
-   
+
    This approach is significantly faster than using external tools as it avoids process spawning overhead.
 
 5. **Top Results Selection**: From the complexity-sorted files, the top 30 results are selected for analysis. The default limit is 30, but this can be modified with an optional command-line flag.
@@ -68,12 +80,14 @@ Temporal coupling measures how often files are changed together in the same comm
 ### Coupling Analysis Process
 
 For each hotspot file in the top results:
+
 1. Identify all commits that modified that file within the specified time period
 2. For each of those commits, collect all other files that were also modified in the same commit
 3. Count how many times each other file appears together with the hotspot file across all commits
 4. Generate a list of coupled files, sorted by coupling count (strongest coupling first)
 
 This analysis helps identify:
+
 - Files that are frequently changed together and may have hidden dependencies
 - Potential refactoring opportunities where coupled files could be better organized
 - Files that should be reviewed together when making changes
@@ -89,7 +103,7 @@ This analysis helps identify:
   - File count information
   - Updating counter for LOC counting (e.g., "Counting LOC: X/Y files processed...")
   - All progress messages are written to stderr
-- **Output Format**: 
+- **Output Format**:
   - If `--output` is specified: Results are written as JSON to the specified file. The JSON structure includes:
     - `arguments`: Object containing:
       - `path`: Repository path
@@ -104,10 +118,8 @@ This analysis helps identify:
       - `file`: File path
       - `modificationCount`: Number of times the file was modified
       - `linesOfCode`: Number of lines of code (excluding comments and blank lines)
-      - `coupling`: Array of coupled files, each containing:
-        - `file`: Path of the coupled file
-        - `count`: Number of commits where both files appear together
-    Note: Relative dates like "12 months ago" are converted to actual ISO dates in the output.
+      - `coupling`: Array of coupled files, each containing: - `file`: Path of the coupled file - `count`: Number of commits where both files appear together
+        Note: Relative dates like "12 months ago" are converted to actual ISO dates in the output.
   - If `--output` is not specified: Results are displayed as CSV in the console (only the results array, without metadata)
 
 ## Command-Line Arguments
@@ -158,3 +170,28 @@ Exclude files matching patterns:
 ```bash
 node hotspots-report.js --path /path/to/repo --since "12 months ago" --exclude "\.lock$" --exclude "\.json$" --exclude "node_modules/"
 ```
+
+## AI Analysis Script
+
+After generating a hotspots report, use the analysis script to get detailed refactoring recommendations:
+
+```bash
+node hotspots-analyze.js --input hotspots.json --output analysis.md --workspace /path/to/repo
+```
+
+The analysis script uses the Cursor Agent to analyze the hotspots data and provides structured, textual output saved to a markdown file. The analysis includes:
+
+- Executive summary of findings
+- Hotspot clusters with refactoring recommendations
+- High-risk areas identification
+- Patterns and insights
+- Priority recommendations
+
+The agent reads the actual source code files to provide code-aware recommendations based on the implementation details, not just metadata.
+
+### Analysis Script Arguments
+
+- `--input <file>` (required): Path to the JSON output file from hotspots-report
+- `--output <file>` (required): Path to the output markdown file for the analysis
+- `--workspace <path>` (optional): Workspace directory for context
+- `--model <model>` (optional): AI model to use for analysis

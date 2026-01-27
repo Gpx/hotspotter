@@ -32,6 +32,7 @@ node dist/index.js --path <repo-path> --since <date> [options]
 ### Output Format
 
 When using `--output`, the JSON file contains:
+
 - `arguments`: Object with:
   - `path`: Repository path
   - `timeRange`: Object with actual ISO date strings (`since` and `until`) - relative dates like "12 months ago" are converted to actual dates
@@ -69,6 +70,39 @@ Exclude files matching patterns:
 node dist/index.js --path /path/to/repo --since "12 months ago" --exclude "\.lock$" --exclude "\.json$" --exclude "node_modules/"
 ```
 
+## Analysis with AI Agent
+
+After generating a hotspots report, you can use the AI analysis script to get detailed refactoring recommendations:
+
+```bash
+node dist/analyze.js --input hotspots.json --output analysis.md
+```
+
+### Analysis Script Arguments
+
+- `--input <file>` (required): Path to the JSON output file from hotspots-report
+- `--output <file>` (required): Path to the output markdown file for the analysis
+- `--workspace <path>` (optional): Workspace directory (repository path) for context. Defaults to current directory or the path from the JSON file.
+- `--model <model>` (optional): Model to use for analysis (e.g., "gpt-5", "sonnet-4")
+
+### Example
+
+```bash
+# Generate hotspots report
+node dist/index.js --path /path/to/repo --since "12 months ago" --output hotspots.json
+
+# Analyze the report with AI and save to markdown
+node dist/analyze.js --input hotspots.json --output analysis.md --workspace /path/to/repo
+```
+
+The analysis script uses the Cursor Agent to analyze the hotspots data and provides:
+
+- Hotspot clusters (groups of files changed together)
+- Refactoring opportunities with specific recommendations
+- High-risk areas identification
+- Patterns and insights about code organization
+- Priority recommendations for refactoring
+
 ## Development
 
 ```bash
@@ -83,3 +117,4 @@ npm run build
 
 - Node.js
 - Git
+- Cursor Agent (for analysis script) - install with `npm install -g @cursor/agent` or use the Cursor IDE

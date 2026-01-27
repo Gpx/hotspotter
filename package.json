@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "hotspots-report": "./dist/index.js"
+    "hotspots-report": "./dist/index.js",
+    "hotspots-analyze": "./dist/analyze.js"
   },
   "scripts": {
     "build": "tsc",
