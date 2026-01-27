@@ -11,10 +11,16 @@ export interface FileModification {
   modificationCount: number;
 }
 
+export interface CoupledFile {
+  file: string;
+  count: number;
+}
+
 export interface HotspotResult {
   file: string;
   modificationCount: number;
   linesOfCode: number;
+  coupling: CoupledFile[];
 }
 
 export async function analyzeHotspots(args: HotspotArgs): Promise<HotspotResult[]> {
@@ -39,7 +45,11 @@ export async function analyzeHotspots(args: HotspotArgs): Promise<HotspotResult[
 
   // Step 4: Sort by LOC and select top results
   hotspotsWithLOC.sort((a, b) => b.linesOfCode - a.linesOfCode);
-  const results = hotspotsWithLOC.slice(0, args.limit);
+  const topResults = hotspotsWithLOC.slice(0, args.limit);
+  
+  // Step 5: Analyze coupling for each hotspot
+  console.error('Analyzing coupling...');
+  const results = await analyzeCoupling(topResults, args);
   
   console.error(`Analysis complete. Returning top ${results.length} hotspots.`);
   
@@ -115,8 +125,8 @@ function selectTopPercentage(
 async function addLinesOfCode(
   fileModifications: FileModification[],
   repoPath: string
-): Promise<HotspotResult[]> {
-  const results: HotspotResult[] = [];
+): Promise<Omit<HotspotResult, 'coupling'>[]> {
+  const results: Omit<HotspotResult, 'coupling'>[] = [];
   const total = fileModifications.length;
 
   for (let i = 0; i < fileModifications.length; i++) {
@@ -152,6 +162,108 @@ async function addLinesOfCode(
   process.stderr.write(`\rCounting LOC: ${total}/${total} files processed.     \n`);
   
   return results;
+}
+
+async function analyzeCoupling(
+  hotspots: Omit<HotspotResult, 'coupling'>[],
+  args: HotspotArgs
+): Promise<HotspotResult[]> {
+  const results: HotspotResult[] = [];
+  const total = hotspots.length;
+
+  for (let i = 0; i < hotspots.length; i++) {
+    const hotspot = hotspots[i];
+    
+    // Update progress counter
+    process.stderr.write(`\rAnalyzing coupling: ${i + 1}/${total} files processed...`);
+    
+    const coupling = await getCouplingForFile(hotspot.file, args);
+    
+    // Filter by coupling threshold (if threshold > 0)
+    const filteredCoupling = args.couplingThreshold > 0
+      ? coupling.filter(c => c.count >= args.couplingThreshold)
+      : coupling;
+    
+    results.push({
+      ...hotspot,
+      coupling: filteredCoupling.sort((a, b) => b.count - a.count), // Sort by count descending
+    });
+  }
+
+  // Clear the progress line and show completion
+  process.stderr.write(`\rAnalyzing coupling: ${total}/${total} files processed.     \n`);
+  
+  return results;
+}
+
+async function getCouplingForFile(
+  file: string,
+  args: HotspotArgs
+): Promise<CoupledFile[]> {
+  const sinceArg = `--since="${args.since}"`;
+  const untilArg = args.until ? `--until="${args.until}"` : '';
+  
+  try {
+    // Get all commits that modified this file
+    // Use --format=%H to get only commit hashes (one per line)
+    const { stdout: commitHashes } = await execAsync(
+      `git log --format=%H ${sinceArg} ${untilArg} -- "${file}"`,
+      {
+        cwd: args.path,
+        maxBuffer: 50 * 1024 * 1024,
+      }
+    );
+
+    // Parse commit hashes (one per line, 40 characters each)
+    const commits = commitHashes
+      .split('\n')
+      .map(h => h.trim())
+      .filter(h => h.length === 40 && /^[0-9a-f]{40}$/i.test(h));
+
+    if (commits.length === 0) {
+      return [];
+    }
+
+    // For each commit, get all files modified in that commit
+    const couplingCounts = new Map<string, number>();
+    
+    for (const commitHash of commits) {
+      const { stdout: filesInCommit } = await execAsync(
+        `git diff-tree --no-commit-id --name-only -r ${commitHash}`,
+        {
+          cwd: args.path,
+          maxBuffer: 10 * 1024 * 1024,
+        }
+      );
+
+      const files = filesInCommit
+        .split('\n')
+        .map(f => f.trim())
+        .filter(f => f && f !== file); // Exclude the hotspot file itself
+
+      // Apply exclude patterns if any
+      let filteredFiles = files;
+      if (args.exclude && args.exclude.length > 0) {
+        const excludeRegexes = args.exclude.map(pattern => new RegExp(pattern));
+        filteredFiles = files.filter(f => {
+          return !excludeRegexes.some(regex => regex.test(f));
+        });
+      }
+
+      // Count coupling
+      for (const coupledFile of filteredFiles) {
+        couplingCounts.set(coupledFile, (couplingCounts.get(coupledFile) || 0) + 1);
+      }
+    }
+
+    // Convert to array
+    return Array.from(couplingCounts.entries())
+      .map(([file, count]) => ({ file, count }));
+  } catch (error) {
+    // If coupling analysis fails, return empty array
+    console.error(`Warning: Could not analyze coupling for ${file}: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
+  }
 }
 
 function getLinesOfCode(filePath: string): number {

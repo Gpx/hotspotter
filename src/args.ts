@@ -4,6 +4,7 @@ export interface HotspotArgs {
   until?: string;
   percentage: number;
   limit: number;
+  couplingThreshold: number;
   output?: string;
   exclude?: string[];
 }
@@ -11,6 +12,7 @@ export interface HotspotArgs {
 export function parseArgs(options: any): HotspotArgs {
   const percentage = parseInt(options.percentage, 10);
   const limit = parseInt(options.limit, 10);
+  const couplingThreshold = parseInt(options.couplingThreshold, 10);
 
   if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
     throw new Error('Percentage must be a number between 1 and 100');
@@ -18,6 +20,10 @@ export function parseArgs(options: any): HotspotArgs {
 
   if (isNaN(limit) || limit <= 0) {
     throw new Error('Limit must be a positive number');
+  }
+
+  if (isNaN(couplingThreshold) || couplingThreshold < 0) {
+    throw new Error('Coupling threshold must be a non-negative number');
   }
 
   // Validate and compile exclude regex patterns
@@ -36,6 +42,7 @@ export function parseArgs(options: any): HotspotArgs {
     until: options.until,
     percentage,
     limit,
+    couplingThreshold,
     output: options.output,
     exclude: excludePatterns.length > 0 ? excludePatterns : undefined,
   };

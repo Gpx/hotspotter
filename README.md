@@ -25,6 +25,7 @@ node dist/index.js --path <repo-path> --since <date> [options]
 - `--until <date>`: End date of the time period (defaults to "now")
 - `--percentage <number>`: Percentage threshold for hotspot selection (default: 10)
 - `--limit <number>`: Maximum number of results to include (default: 30)
+- `--coupling-threshold <number>`: Minimum coupling count to include in results (default: 5, set to 0 to disable filtering)
 - `--output <file>`: Output file path for JSON results. If not specified, results are displayed as CSV in the console.
 - `--exclude <pattern>`: Regex pattern to exclude files from analysis. Can be specified multiple times to exclude multiple patterns.
 
@@ -36,8 +37,9 @@ When using `--output`, the JSON file contains:
   - `timeRange`: Object with actual ISO date strings (`since` and `until`) - relative dates like "12 months ago" are converted to actual dates
   - `percentage`: Percentage threshold used
   - `limit`: Maximum number of results
+  - `couplingThreshold`: Minimum coupling count threshold used
   - `exclude`: Array of exclude patterns (if any)
-- `results`: Array of hotspot objects with `file`, `modificationCount`, and `linesOfCode`
+- `results`: Array of hotspot objects with `file`, `modificationCount`, `linesOfCode`, and `coupling` (array of coupled files)
 
 When not using `--output`, results are displayed as CSV (only the data, no metadata).
 

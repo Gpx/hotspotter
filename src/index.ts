@@ -17,6 +17,7 @@ program
   .option('--until <date>', 'End date of the time period (Git date format, defaults to "now")')
   .option('--percentage <number>', 'Percentage threshold for hotspot selection', '10')
   .option('--limit <number>', 'Maximum number of results to include', '30')
+  .option('--coupling-threshold <number>', 'Minimum coupling count to include (default: 5, set to 0 to disable)', '5')
   .option('--output <file>', 'Output file path for JSON results (if not specified, outputs table to console)')
   .option('--exclude <pattern>', 'Regex pattern to exclude files (can be specified multiple times)', (value, previous: string[] = []) => {
     previous.push(value);
@@ -41,6 +42,7 @@ program
             },
             percentage: args.percentage,
             limit: args.limit,
+            couplingThreshold: args.couplingThreshold,
             exclude: args.exclude,
           },
           results: results,

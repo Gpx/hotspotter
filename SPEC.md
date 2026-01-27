@@ -49,6 +49,35 @@ The tool finds hotspots by analyzing commit frequency within a specified time pe
 
 5. **Top Results Selection**: From the complexity-sorted files, the top 30 results are selected for analysis. The default limit is 30, but this can be modified with an optional command-line flag.
 
+## Coupling Analysis
+
+For each file in the top results (top 30 by default), the tool analyzes **temporal coupling** (also known as **evolutionary coupling** or **logical coupling**).
+
+### What is Temporal Coupling?
+
+Temporal coupling measures how often files are changed together in the same commits. If two files frequently appear in the same commit, they are said to be "coupled" - indicating they are likely related and may need to be considered together when making changes.
+
+### Coupling Measurement
+
+- **Coupling Count**: For each pair of files (A, B), the coupling count is the number of commits in which both files A and B appear together.
+- **Coupling Strength**: The more commits two files share, the stronger their coupling. For example:
+  - If files A and B appear together in 5 commits, they have a coupling count of 5
+  - If files A and B appear together in 1 commit, they have a coupling count of 1
+  - If files A and B never appear in the same commit, they have a coupling count of 0
+
+### Coupling Analysis Process
+
+For each hotspot file in the top results:
+1. Identify all commits that modified that file within the specified time period
+2. For each of those commits, collect all other files that were also modified in the same commit
+3. Count how many times each other file appears together with the hotspot file across all commits
+4. Generate a list of coupled files, sorted by coupling count (strongest coupling first)
+
+This analysis helps identify:
+- Files that are frequently changed together and may have hidden dependencies
+- Potential refactoring opportunities where coupled files could be better organized
+- Files that should be reviewed together when making changes
+
 ## Implementation Details
 
 - **Technology**: Node.js script written in TypeScript
@@ -69,11 +98,15 @@ The tool finds hotspots by analyzing commit frequency within a specified time pe
         - `until`: End date in ISO format (e.g., "2025-01-27T00:00:00.000Z")
       - `percentage`: Percentage threshold used
       - `limit`: Maximum number of results
+      - `couplingThreshold`: Minimum coupling count threshold used
       - `exclude`: Array of exclude patterns (if any)
     - `results`: Array of hotspot results, each containing:
       - `file`: File path
       - `modificationCount`: Number of times the file was modified
       - `linesOfCode`: Number of lines of code (excluding comments and blank lines)
+      - `coupling`: Array of coupled files, each containing:
+        - `file`: Path of the coupled file
+        - `count`: Number of commits where both files appear together
     Note: Relative dates like "12 months ago" are converted to actual ISO dates in the output.
   - If `--output` is not specified: Results are displayed as CSV in the console (only the results array, without metadata)
 
@@ -84,6 +117,7 @@ The tool finds hotspots by analyzing commit frequency within a specified time pe
 - `--until <date>` (optional): End date of the time period to analyze. Uses Git's standard date format. If not specified, defaults to "now". This argument is passed directly to Git commands.
 - `--percentage <number>` (optional): Percentage threshold for hotspot selection (default: 10)
 - `--limit <number>` (optional): Maximum number of results to include in the analysis (default: 30)
+- `--coupling-threshold <number>` (optional): Minimum coupling count to include in coupling results (default: 5). Set to 0 to disable filtering and include all couplings.
 - `--output <file>` (optional): Output file path for JSON results. If not specified, results are displayed as CSV in the console.
 - `--exclude <pattern>` (optional): Regex pattern to exclude files from analysis. Can be specified multiple times to exclude multiple patterns. Files matching any of the patterns will be filtered out before analysis.
 
