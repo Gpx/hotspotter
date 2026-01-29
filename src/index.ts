@@ -5,7 +5,7 @@ import { writeFile } from 'fs/promises';
 import { analyzeHotspots } from './analyzer.js';
 import { parseArgs } from './args.js';
 import { formatAsTable } from './formatter.js';
-import { resolveDateRange } from './dateResolver.js';
+import { resolveDateRange, getCommitRangeForRange } from './dateResolver.js';
 
 const program = new Command();
 
@@ -29,9 +29,12 @@ program
       const results = await analyzeHotspots(args);
       
       if (args.output) {
-        // Resolve actual date range from git date strings
-        const dateRange = await resolveDateRange(args.since, args.until, args.path);
-        
+        // Resolve actual date range and commit range from git
+        const [dateRange, commitRange] = await Promise.all([
+          resolveDateRange(args.since, args.until, args.path),
+          getCommitRangeForRange(args.since, args.until, args.path),
+        ]);
+
         // Write JSON to file with metadata
         const output = {
           arguments: {
@@ -39,6 +42,8 @@ program
             timeRange: {
               since: dateRange.since,
               until: dateRange.until,
+              ...(commitRange.startCommit && { startCommit: commitRange.startCommit }),
+              ...(commitRange.endCommit && { endCommit: commitRange.endCommit }),
             },
             percentage: args.percentage,
             limit: args.limit,

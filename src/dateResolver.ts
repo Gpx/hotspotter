@@ -31,6 +31,46 @@ export async function resolveDateRange(
   };
 }
 
+export interface CommitRange {
+  startCommit: string | null;
+  endCommit: string | null;
+}
+
+/**
+ * Returns the start (oldest) and end (newest) commit hashes for the given git date range.
+ * Useful for reproducibility and referencing the exact range of the analysis.
+ *
+ * Note: git log -1 --reverse applies the limit first then reverses, so we get the oldest
+ * by outputting the full reversed list and taking the first line (oldest).
+ */
+export async function getCommitRangeForRange(
+  since: string,
+  until: string | undefined,
+  repoPath: string
+): Promise<CommitRange> {
+  const untilArg = until ? `--until="${until}"` : '';
+  try {
+    const [endCommit, startCommit] = await Promise.all([
+      // Newest in range: default order, -1 gives first (newest)
+      execAsync(
+        `git log --since="${since}" ${untilArg} --format=%H -1`,
+        { cwd: repoPath, maxBuffer: 1024 * 1024 }
+      ).then(({ stdout }) => stdout.trim() || null),
+      // Oldest in range: --reverse then take first line (git log -1 --reverse would apply -1 first, giving wrong result)
+      execAsync(
+        `git log --since="${since}" ${untilArg} --format=%H --reverse`,
+        { cwd: repoPath, maxBuffer: 1024 * 1024 }
+      ).then(({ stdout }) => {
+        const firstLine = stdout.trim().split('\n')[0];
+        return firstLine?.trim() || null;
+      }),
+    ]);
+    return { startCommit, endCommit };
+  } catch {
+    return { startCommit: null, endCommit: null };
+  }
+}
+
 async function resolveGitDate(dateString: string, repoPath: string): Promise<string> {
   // First, try to parse as absolute date
   const absoluteDate = new Date(dateString);

@@ -16,11 +16,23 @@ export interface CoupledFile {
   count: number;
 }
 
+/** Lightweight score level for prioritization; relative to the current result set. */
+export type ScoreLevel = 'High' | 'Medium' | 'Low';
+
+/** Per-file scores for change frequency, LOC, and coupling. Business criticality is assigned in the report from code context. */
+export interface HotspotScores {
+  changeFrequency: ScoreLevel;
+  loc: ScoreLevel;
+  coupling: ScoreLevel;
+}
+
 export interface HotspotResult {
   file: string;
   modificationCount: number;
   linesOfCode: number;
   coupling: CoupledFile[];
+  /** Scores are computed from the result set (tertiles). Use for badges in the report. */
+  scores?: HotspotScores;
 }
 
 export async function analyzeHotspots(args: HotspotArgs): Promise<HotspotResult[]> {
@@ -49,11 +61,50 @@ export async function analyzeHotspots(args: HotspotArgs): Promise<HotspotResult[
   
   // Step 5: Analyze coupling for each hotspot
   console.error('Analyzing coupling...');
-  const results = await analyzeCoupling(topResults, args);
-  
+  let results = await analyzeCoupling(topResults, args);
+
+  // Step 6: Add lightweight scores (High/Medium/Low) for change frequency, LOC, coupling
+  results = addScores(results);
+
   console.error(`Analysis complete. Returning top ${results.length} hotspots.`);
-  
+
   return results;
+}
+
+/**
+ * Assigns High/Medium/Low per dimension using tertiles (33rd/67th percentiles) over the result set.
+ * Coupling strength = sum of coupling counts for that file.
+ */
+function addScores(results: HotspotResult[]): HotspotResult[] {
+  if (results.length === 0) return results;
+
+  const n = results.length;
+  const modCounts = results.map(r => r.modificationCount).sort((a, b) => a - b);
+  const locs = results.map(r => r.linesOfCode).sort((a, b) => a - b);
+  const couplingStrengths = results
+    .map(r => r.coupling.reduce((sum, c) => sum + c.count, 0))
+    .sort((a, b) => a - b);
+
+  const tertile = (sorted: number[], value: number): ScoreLevel => {
+    const i1 = Math.max(0, Math.floor(n / 3) - 1);
+    const i2 = Math.max(0, Math.floor((2 * n) / 3) - 1);
+    const b1 = sorted[i1];
+    const b2 = sorted[i2];
+    if (value <= b1) return 'Low';
+    if (value <= b2) return 'Medium';
+    return 'High';
+  };
+
+  return results.map(r => {
+    const changeFrequency = tertile(modCounts, r.modificationCount);
+    const loc = tertile(locs, r.linesOfCode);
+    const couplingStrength = r.coupling.reduce((sum, c) => sum + c.count, 0);
+    const coupling = tertile(couplingStrengths, couplingStrength);
+    return {
+      ...r,
+      scores: { changeFrequency, loc, coupling },
+    };
+  });
 }
 
 async function getFileModifications(args: HotspotArgs): Promise<FileModification[]> {
