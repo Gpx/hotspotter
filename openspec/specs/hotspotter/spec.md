@@ -1,4 +1,4 @@
-# Hotspotter - Project Specification
+# Hotspotter (CLI)
 
 ## Overview
 
@@ -6,7 +6,7 @@ Hotspotter finds the parts of your codebase that deserve attention. It analyzes 
 
 ## What are Hotspots?
 
-Hotspots are files or sections of a codebase that are likely candidates for refactoring. These may be identified through various metrics such as:
+Hotspots are files or sections of a codebase that are likely candidates for refactoring. These may be identified using various metrics such as:
 
 - High complexity
 - Frequent changes
@@ -26,12 +26,7 @@ The tool operates in two main phases:
 
 ### Phase 2: AI-Powered Refactoring Recommendations
 
-A separate analysis script (`hotspotter-analyze`) uses an AI agent to:
-
-1. Read the JSON output from Phase 1
-2. Analyze hotspot clusters and coupling relationships
-3. Generate human-readable refactoring recommendations
-4. Identify high-risk areas and priority refactoring opportunities
+A separate analysis script (`hotspotter-analyze`) uses an AI agent to produce refactoring recommendations from the Phase 1 output. See the [AI Analysis](ai-analysis) spec.
 
 ## Hotspot Detection Method
 
@@ -176,38 +171,3 @@ Exclude files matching patterns:
 ```bash
 hotspotter --path /path/to/repo --since "12 months ago" --exclude "\.lock$" --exclude "\.json$" --exclude "node_modules/"
 ```
-
-## AI Analysis Script
-
-After generating a hotspots report, use the analysis script to get detailed refactoring recommendations:
-
-```bash
-hotspotter-analyze --input hotspots.json --output analysis.md --workspace /path/to/repo
-```
-
-The analysis script uses the Cursor Agent to analyze the hotspots data and provides structured, textual output saved to a markdown file. The generated report follows a strict format with 13 mandatory sections:
-
-1. **Title + front matter** — Title line (# Refactoring Opportunities Report: [scope]), date range, then Author/Role/Scope/Methodology/Intended audience block (Giorgio Polvara, Staff Engineer, scope, Git history analysis + manual code review)
-2. **TL;DR** — Boxed summary (5–7 bullets) with concrete numbers for stakeholders
-3. **About This Report** — Explanation of methodology and purpose
-4. **Why this happened** — Organizational context (long-lived ownership, feature pressure, missing refactoring budget)
-5. **What not to do** — Constraints (no rewrite from scratch, no blocking features, no all-at-once migrations)
-6. **Analysis Parameters** — Repository name, analysis period, start/end commit hashes (when available), thresholds, and excluded patterns
-7. **Scoring model** — Explanation of High/Medium/Low badges (change frequency, LOC, coupling, business criticality)
-8. **Executive Summary** — High-level overview of findings
-9. **Priority Recommendations** — Top 3–5 refactoring priorities with impact estimates
-10. **Hotspot Clusters** — Groups of coupled files with refactoring recommendations
-11. **High-Risk Areas** — Problematic files with business impact (revenue risk, onboarding cost, blast radius)
-12. **Systemic Issues Identified** — Patterns and architectural concerns
-13. **How to use this report** — Guidance on using different sections and re-running periodically
-
-Each section (except Title) includes an audience note (_Audience: EMs / PMs_ or _Audience: Staff Engineers / Tech Leads_) to help readers navigate the report. Authorship is stated in two places: (1) front matter right under the title (Author, Role, Scope, Methodology, Intended audience); (2) an "Authorship" note at the end of About This Report, in third-person factual language, tying the author's name to judgment and accountability.
-
-The agent reads the actual source code files to provide code-aware recommendations based on implementation details, not just metadata. The report emphasizes business framing, avoids blame, and frames findings as system problems rather than team failures.
-
-### Analysis Script Arguments
-
-- `--input <file>` (required): Path to the JSON output file from Hotspotter
-- `--output <file>` (required): Path to the output markdown file for the analysis
-- `--workspace <path>` (optional): Workspace directory for context
-- `--model <model>` (optional): AI model to use for analysis
