@@ -1,6 +1,6 @@
 You are analyzing a code hotspots report to identify refactoring opportunities. Your task is to examine the data and provide actionable insights in a structured, textual format.
 
-**Format requirement**: Your report MUST include every section in "Required Output Format" below — all 13 sections, in order. None of the sections may be skipped. Every section (except Title) must have an *Audience: ...* line directly under its heading.
+**Format requirement**: Your report MUST include every section in "Required Output Format" below — all 13 sections, in order. None of the sections may be skipped. Every section (except Title) must have an _Audience: ..._ line directly under its heading.
 
 ## First Step: Read the Hotspots Data
 
@@ -8,6 +8,7 @@ You are analyzing a code hotspots report to identify refactoring opportunities. 
 {{INPUT_FILE_PATH}}
 
 This file contains all the hotspot analysis data including:
+
 - Analysis time period and repository information (in the `arguments` object)
 - Optional start and end commit hashes for the analysis range (`arguments.timeRange.startCommit`, `arguments.timeRange.endCommit`) when available
 - List of hotspot files with modification counts, lines of code, and optional `scores` (changeFrequency, loc, coupling as High/Medium/Low)
@@ -15,6 +16,7 @@ This file contains all the hotspot analysis data including:
 - All metadata needed for the analysis
 
 Read this file first to understand what you're analyzing. Extract the following information from the JSON file:
+
 - Repository path (from `arguments.path`)
 - Time range (from `arguments.timeRange.since` and `arguments.timeRange.until`)
 - Start and end commit hashes when present (from `arguments.timeRange.startCommit` and `arguments.timeRange.endCommit`)
@@ -65,22 +67,23 @@ Your final report **MUST** contain every section listed below, in this exact ord
 ### Mandatory section list (include every one, in this order — do not skip any)
 
 1. **Title + front matter** — Title line, date range, then Author/Role/Scope/Methodology/Intended audience block. Do not skip.
-2. **TL;DR** — boxed (blockquote), 5–7 bullets with real numbers. Do not skip. Next line after heading: *Audience: EMs / PMs*
-3. **About This Report** — 2–3 paragraphs. Do not skip. Next line after heading: *Audience: EMs / PMs*
-4. **Why this happened** — one short paragraph (organizational causes: long-lived ownership, feature pressure, missing refactoring budget). Do not skip. Next line after heading: *Audience: EMs / PMs*
-5. **What not to do** — three bullets (no rewrite from scratch; no block feature work; no convert-everything-to-X in one go). Do not skip. Next line after heading: *Audience: EMs / PMs*
-6. **Analysis Parameters** — list (Repository name only, Analysis Period, Start commit, End commit when present, Percentage, Limit, Coupling Threshold, Excluded). Do not skip. Next line after heading: *Audience: Staff Engineers / Tech Leads*
-7. **Scoring model** — explain the four badges. Do not skip. Next line after heading: *Audience: Staff Engineers / Tech Leads*
-8. **Executive Summary** — 2–3 paragraphs. Do not skip. Next line after heading: *Audience: EMs / PMs*
-9. **Priority Recommendations** — 3–5 numbered items + "Detailed rationale (see below)". Do not skip. Next line after heading: *Audience: EMs / PMs*
-10. **Hotspot Clusters** — for each cluster: Description, Files Involved (with badges), Coupling Analysis, Refactoring Recommendations. Do not skip. Next line after heading: *Audience: Staff Engineers / Tech Leads*
-11. **High-Risk Areas** — for each file: badges, Risk Factors, Business impact, Impact, Recommendations. Do not skip. Next line after heading: *Audience: Staff Engineers / Tech Leads*
-12. **Systemic Issues Identified** — patterns and implications. Do not skip. Next line after heading: *Audience: Staff Engineers / Tech Leads*
-13. **How to use this report** — short closing with bullets on how to use each part of the doc and re-run to track progress. Do not skip. Next line after heading: *Audience: EMs / PMs*
+2. **TL;DR** — boxed (blockquote), 5–7 bullets with real numbers. Do not skip. Next line after heading: _Audience: EMs / PMs_
+3. **About This Report** — 2–3 paragraphs. Do not skip. Next line after heading: _Audience: EMs / PMs_
+4. **Why this happened** — one short paragraph (organizational causes: long-lived ownership, feature pressure, missing refactoring budget). Do not skip. Next line after heading: _Audience: EMs / PMs_
+5. **What not to do** — three bullets (no rewrite from scratch; no block feature work; no convert-everything-to-X in one go). Do not skip. Next line after heading: _Audience: EMs / PMs_
+6. **Analysis Parameters** — list (Repository name only, Analysis Period, Start commit, End commit when present, Percentage, Limit, Coupling Threshold, Excluded). Do not skip. Next line after heading: _Audience: Staff Engineers / Tech Leads_
+7. **Scoring model** — explain the four badges. Do not skip. Next line after heading: _Audience: Staff Engineers / Tech Leads_
+8. **Executive Summary** — 2–3 paragraphs. Do not skip. Next line after heading: _Audience: EMs / PMs_
+9. **Priority Recommendations** — 3–5 numbered items + "Detailed rationale (see below)". Do not skip. Next line after heading: _Audience: EMs / PMs_
+10. **Hotspot Clusters** — for each cluster: Description, Files Involved (with badges), Coupling Analysis, Refactoring Recommendations. Do not skip. Next line after heading: _Audience: Staff Engineers / Tech Leads_
+11. **High-Risk Areas** — for each file: badges, Risk Factors, Business impact, Impact, Recommendations. Do not skip. Next line after heading: _Audience: Staff Engineers / Tech Leads_
+12. **Systemic Issues Identified** — patterns and implications. Do not skip. Next line after heading: _Audience: Staff Engineers / Tech Leads_
+13. **How to use this report** — short closing with bullets on how to use each part of the doc and re-run to track progress. Do not skip. Next line after heading: _Audience: EMs / PMs_
 
-**Audience line rule**: Under **every** section heading (### or ##) except the Title, the **very next line** must be exactly one of: *Audience: EMs / PMs* or *Audience: Staff Engineers / Tech Leads* as specified for that section. No section without an audience line is complete.
+**Audience line rule**: Under **every** section heading (### or ##) except the Title, the **very next line** must be exactly one of: _Audience: EMs / PMs_ or _Audience: Staff Engineers / Tech Leads_ as specified for that section. No section without an audience line is complete.
 
 **What to preserve** (do not change these):
+
 - **Tone**: Keep the report calm, factual, and non-blamey. No finger-pointing; frame findings as system and context, not personal failure.
 - **Level of detail**: This is a refactoring report — enough detail to prioritize and act, not an exhaustive audit. Stay at this level.
 - **Mix of data + code reality**: Use both the metrics (modification counts, LOC, coupling) and what you see in the code (comments, ESLint overrides, structure, duplication). The combination is what makes the report credible.
@@ -91,16 +94,19 @@ Your final report **MUST** contain every section listed below, in this exact ord
 **MANDATORY — do not skip.** Use this exact structure. The front matter goes **right under the title**; this is the standard, least controversial place for authorship and scope.
 
 **Title block:**
+
 ```
 # Refactoring Opportunities Report: [scope]
 [Start Date] to [End Date]
 ```
 
 Where:
+
 - **[scope]** is the repository/folder name only (e.g. if path is "/path/to/frontend", use "frontend")
 - **[Start Date]** and **[End Date]** are formatted dates from the timeRange (e.g. "January 28, 2025" to "January 28, 2026")
 
 **Front matter block** (immediately under the date range; use third-person, factual language):
+
 - **Author**: Giorgio Polvara
 - **Role**: Staff Engineer
 - **Scope**: [same as in title — repository/folder name]
@@ -111,7 +117,7 @@ This makes ownership explicit, factual, and neutral.
 
 ### TL;DR
 
-*Audience: EMs / PMs*
+_Audience: EMs / PMs_
 
 **MANDATORY — do not omit.** Right after the title, you MUST include a TL;DR section. Format it as a markdown blockquote (wrap the content in `>` lines) so it stands out visually.
 
@@ -127,9 +133,10 @@ Fill in real numbers and adapt the wording (e.g. "checkout flow", "auth", "payme
 
 ### About This Report
 
-*Audience: EMs / PMs*
+_Audience: EMs / PMs_
 
 **MANDATORY — do not skip.** Include a brief explanation (2-3 paragraphs) of what this report is and how it was generated. Explain:
+
 - This report identifies code hotspots (files that change frequently) and analyzes their coupling relationships
 - It uses git commit history to find files that are modified together, indicating potential refactoring opportunities
 - The analysis combines quantitative metrics (modification counts, lines of code, coupling counts) with code review to provide actionable recommendations
@@ -147,13 +154,13 @@ This signals accountability, protects the document from being treated as anonymo
 
 ### Why this happened
 
-*Audience: EMs / PMs*
+_Audience: EMs / PMs_
 
 **MANDATORY — do not omit.** You MUST include this section: one short paragraph that acknowledges organizational causes of the current hotspots. Call out factors such as: long-lived ownership (same people/team owning the same code for a long time), feature pressure (shipping over sustainability), and missing explicit refactoring budget (no dedicated time or mandate to pay down debt). Phrase it so the situation is framed as a **system problem**, not a team or individual failure. This helps readers accept the findings without feeling blamed.
 
 ### What not to do
 
-*Audience: EMs / PMs*
+_Audience: EMs / PMs_
 
 **MANDATORY — do not omit.** You MUST include this section with the three bullets below. State explicitly:
 
@@ -165,9 +172,10 @@ Keep it short. This protects the document from being misused to argue for big re
 
 ### Analysis Parameters
 
-*Audience: Staff Engineers / Tech Leads*
+_Audience: Staff Engineers / Tech Leads_
 
 **MANDATORY — do not skip.** Include a section listing all the parameters used for this analysis:
+
 - **Repository**: [folder/repository name only, e.g. my-repo — do not use the full path]
 - **Analysis Period**: [formatted start date] to [formatted end date]
 - **Start commit**: [hash when present in the analysis data — e.g. oldest commit in the range]
@@ -181,7 +189,7 @@ When the analysis data includes `timeRange.startCommit` and `timeRange.endCommit
 
 ### Scoring model
 
-*Audience: Staff Engineers / Tech Leads*
+_Audience: Staff Engineers / Tech Leads_
 
 **MANDATORY — do not skip.** Use an explicit scoring model so prioritization is credible and bikeshedding is reduced. Each hotspot file gets four dimensions, each with a **High** / **Medium** / **Low** badge.
 
@@ -196,30 +204,31 @@ When listing files (in Hotspot Clusters, High-Risk Areas, and where relevant in 
 
 ### Executive Summary
 
-*Audience: EMs / PMs*
+_Audience: EMs / PMs_
 
 **MANDATORY — do not skip.** [2-3 paragraphs providing a high-level overview of key findings, main refactoring opportunities, and overall code health assessment]
 
 ### Priority Recommendations
 
-*Audience: EMs / PMs*
+_Audience: EMs / PMs_
 
 **MANDATORY — do not skip.** Top 3–5 refactoring priorities ranked by impact and feasibility:
 
 1. **[Priority 1]**: [Description, why it's important, estimated impact]
 2. **[Priority 2]**: [Description, why it's important, estimated impact]
 3. **[Priority 3]**: [Description, why it's important, estimated impact]
-[Continue as needed]
+   [Continue as needed]
 
 End this section with a short line such as: **Detailed rationale (see below)** — and point readers to the Hotspot Clusters, High-Risk Areas, and Systemic Issues Identified sections for the full analysis.
 
 ### Hotspot Clusters
 
-*Audience: Staff Engineers / Tech Leads*
+_Audience: Staff Engineers / Tech Leads_
 
 **MANDATORY — do not skip.** [For each significant cluster of coupled files, provide:]
 
 **Cluster: [Descriptive Name]**
+
 - **Description**: [What this cluster represents and its purpose in the codebase]
 - **Files Involved**: (include badges for each file: Change, LOC, Coupling, Business)
   - [File path 1] — [Change: X] [LOC: X] [Coupling: X] [Business: X] ([X] modifications, [Y] LOC)
@@ -235,11 +244,12 @@ End this section with a short line such as: **Detailed rationale (see below)** �
 
 ### High-Risk Areas
 
-*Audience: Staff Engineers / Tech Leads*
+_Audience: Staff Engineers / Tech Leads_
 
 **MANDATORY — do not skip.** [Identify and describe files that are particularly problematic. For each file, show badges first. **Strengthen business framing**: include at least one sentence per file on revenue risk, onboarding cost, and/or change failure blast radius.]
 
 **File: [path]** — [Change: X] [LOC: X] [Coupling: X] [Business: X]
+
 - **Risk Factors**: [Why this file is high-risk - high complexity, frequent changes, tight coupling, etc.]
 - **Business impact**: [At least one sentence per file. Cover one or more of: revenue risk (e.g. touches payment, pricing); onboarding cost (e.g. hard to understand, blocks new devs); change failure blast radius (e.g. a bug here breaks X downstream).]
 - **Impact**: [What happens if this file continues to accumulate technical debt]
@@ -249,7 +259,7 @@ End this section with a short line such as: **Detailed rationale (see below)** �
 
 ### Systemic Issues Identified
 
-*Audience: Staff Engineers / Tech Leads*
+_Audience: Staff Engineers / Tech Leads_
 
 **MANDATORY — do not skip.** [Overall observations about the codebase:]
 
@@ -259,7 +269,7 @@ End this section with a short line such as: **Detailed rationale (see below)** �
 
 ### How to use this report
 
-*Audience: EMs / PMs*
+_Audience: EMs / PMs_
 
 **MANDATORY — do not skip.** End the report with a short closing section that frames the doc as a living artifact, not a one-off critique. Include bullets along these lines (adapt wording to the report):
 
@@ -281,7 +291,7 @@ Keep it brief. The goal is to tell readers how to act on the report and that it 
 - Consider file complexity: High LOC + high modifications = higher refactoring priority - examine the code to see what makes it complex
 - Code-based insights: Base your recommendations on actual code patterns, not just metadata
 - Use the scoring model: Show High/Medium/Low badges (change frequency, LOC, coupling from the analysis data; business criticality from code). In the report, explain how the metrics were generated (git history, line counts, co-change analysis), not the JSON file. Explicit scores justify prioritization and reduce bikeshedding
-- Audience notes: Include the italic *Audience: EMs / PMs* or *Audience: Staff Engineers / Tech Leads* line under each section heading (except Title) so readers know who the section is for and can skip "too technical" or "too high-level" sections
+- Audience notes: Include the italic _Audience: EMs / PMs_ or _Audience: Staff Engineers / Tech Leads_ line under each section heading (except Title) so readers know who the section is for and can skip "too technical" or "too high-level" sections
 - What not to do: Always include the "What not to do" section with the three explicit constraints (no rewrite from scratch, no blocking feature work, no convert-everything-to-X in one go). State it clearly so the report cannot be cited later to justify big rewrites, feature freezes, or all-at-once migrations
 - Why this happened: Include the "Why this happened" paragraph once, acknowledging organizational causes (long-lived ownership, feature pressure, missing refactoring budget). Frame it as a system problem, not team failure, so readers do not feel blamed
 - Business framing: For each high-risk file, include at least one sentence on revenue risk, onboarding cost, and/or change failure blast radius. One sentence per file is enough; this strengthens the case for prioritization with EMs/PMs
@@ -298,9 +308,10 @@ Keep it brief. The goal is to tell readers how to act on the report and that it 
 
 ## Important: After completing your analysis
 
-Before saving, **verify your report includes all 13 sections — none may be skipped** — and an *Audience: ...* line under every section heading except the Title. If any section or any audience line is missing, add it before saving.
+Before saving, **verify your report includes all 13 sections — none may be skipped** — and an _Audience: ..._ line under every section heading except the Title. If any section or any audience line is missing, add it before saving.
 
 Once you have finished your analysis and displayed it to the user, you should:
+
 1. Ask the user if they would like to save the analysis to a file
 2. If they confirm, save the complete analysis (including all sections) to: {{OUTPUT_FILE_PATH}}
 
