@@ -1,6 +1,6 @@
-# Hotspots Report
+# Hotspotter
 
-A command-line tool that analyzes a code repository to identify hotspots - files or sections of code that are likely in need of refactoring.
+Find the parts of your codebase that deserve attention.
 
 ## Installation
 
@@ -11,9 +11,13 @@ npm run build
 
 ## Usage
 
+After building (or when installed globally), run:
+
 ```bash
-node dist/index.js --path <repo-path> --since <date> [options]
+hotspotter --path <repo-path> --since <date> [options]
 ```
+
+Or from the project directory: `node dist/index.js --path <repo-path> --since <date> [options]`
 
 ### Required Arguments
 
@@ -72,15 +76,17 @@ node dist/index.js --path /path/to/repo --since "12 months ago" --exclude "\.loc
 
 ## Analysis with AI Agent
 
-After generating a hotspots report, you can use the AI analysis script to get detailed refactoring recommendations:
+After generating a report, you can use the AI analysis script to get detailed refactoring recommendations:
 
 ```bash
-node dist/analyze.js --input hotspots.json --output analysis.md
+hotspotter-analyze --input hotspots.json --output analysis.md
 ```
+
+Or: `node dist/analyze.js --input hotspots.json --output analysis.md`
 
 ### Analysis Script Arguments
 
-- `--input <file>` (required): Path to the JSON output file from hotspots-report
+- `--input <file>` (required): Path to the JSON output file from Hotspotter
 - `--output <file>` (required): Path to the output markdown file for the analysis
 - `--workspace <path>` (optional): Workspace directory (repository path) for context. Defaults to current directory or the path from the JSON file.
 - `--model <model>` (optional): Model to use for analysis (e.g., "gpt-5", "sonnet-4")

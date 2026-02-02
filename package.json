@@ -1,12 +1,12 @@
 {
-  "name": "hotspots-report",
+  "name": "hotspotter",
   "version": "1.0.0",
-  "description": "A command-line tool to identify code hotspots that need refactoring",
+  "description": "Find the parts of your codebase that deserve attention.",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "hotspots-report": "./dist/index.js",
-    "hotspots-analyze": "./dist/analyze.js"
+    "hotspotter": "./dist/index.js",
+    "hotspotter-analyze": "./dist/analyze.js"
   },
   "scripts": {
     "build": "tsc",

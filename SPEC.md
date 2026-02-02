@@ -1,8 +1,8 @@
-# Hotspots Report - Project Specification
+# Hotspotter - Project Specification
 
 ## Overview
 
-Hotspots Report is a command-line tool that analyzes a code repository to identify hotspots - files or sections of code that are likely in need of refactoring. The tool outputs a comprehensive analysis of these hotspots to help developers prioritize refactoring efforts.
+Hotspotter finds the parts of your codebase that deserve attention. It analyzes a code repository to identify hotspots—files or sections of code that are likely in need of refactoring—and outputs a comprehensive analysis to help developers prioritize refactoring efforts.
 
 ## What are Hotspots?
 
@@ -26,7 +26,7 @@ The tool operates in two main phases:
 
 ### Phase 2: AI-Powered Refactoring Recommendations
 
-A separate analysis script (`hotspots-analyze`) uses an AI agent to:
+A separate analysis script (`hotspotter-analyze`) uses an AI agent to:
 
 1. Read the JSON output from Phase 1
 2. Analyze hotspot clusters and coupling relationships
@@ -40,18 +40,21 @@ The tool finds hotspots by analyzing commit frequency within a specified time pe
 1. **Time Period Analysis**: Analyzes the number of commits that occurred in a certain period of time. The time period is defined by command-line arguments.
 
 2. **File Modification Counting**: For each file that has been modified during the time period, counts how many times it was modified (i.e., how many commits included that file). For example:
+
    - If two commits include file A, file A has been modified 2 times
    - If no commits include file B during the time period, file B has been modified 0 times
 
 3. **Top Percentage Selection**: From all modified files, selects the top 10% that have had the most changes. The default percentage is 10%, but this can be modified with an optional command-line flag.
 
 4. **Complexity Sorting**: The selected files are then sorted by complexity. Complexity is measured by counting lines of code (LOC) directly from the file contents, excluding:
+
    - Empty lines
    - Lines containing only whitespace
    - Comment lines (both single-line and block comments)
    - Only actual lines of code are counted
 
    The tool reads each file directly and counts LOC by:
+
    - Parsing the file content line by line
    - Removing comments based on file extension (supports JavaScript, TypeScript, Python, Java, C/C++, Go, Rust, HTML, CSS, SQL, and many other languages)
    - Handling both single-line comments (e.g., `//`, `#`) and block comments (e.g., `/* */`, `<!-- -->`)
@@ -141,37 +144,37 @@ This analysis helps identify:
 Analyze the last 12 months:
 
 ```bash
-node hotspots-report.js --path /path/to/repo --since "12 months ago" --percentage 10
+hotspotter --path /path/to/repo --since "12 months ago" --percentage 10
 ```
 
 Analyze a specific date range:
 
 ```bash
-node hotspots-report.js --path /path/to/repo --since 2024-01-01 --until 2024-12-31 --percentage 10
+hotspotter --path /path/to/repo --since 2024-01-01 --until 2024-12-31 --percentage 10
 ```
 
 Or with default percentage and limit:
 
 ```bash
-node hotspots-report.js --path /path/to/repo --since "12 months ago"
+hotspotter --path /path/to/repo --since "12 months ago"
 ```
 
 With custom limit:
 
 ```bash
-node hotspots-report.js --path /path/to/repo --since "12 months ago" --limit 50
+hotspotter --path /path/to/repo --since "12 months ago" --limit 50
 ```
 
 Save results to a JSON file:
 
 ```bash
-node hotspots-report.js --path /path/to/repo --since "12 months ago" --output hotspots.json
+hotspotter --path /path/to/repo --since "12 months ago" --output hotspots.json
 ```
 
 Exclude files matching patterns:
 
 ```bash
-node hotspots-report.js --path /path/to/repo --since "12 months ago" --exclude "\.lock$" --exclude "\.json$" --exclude "node_modules/"
+hotspotter --path /path/to/repo --since "12 months ago" --exclude "\.lock$" --exclude "\.json$" --exclude "node_modules/"
 ```
 
 ## AI Analysis Script
@@ -179,7 +182,7 @@ node hotspots-report.js --path /path/to/repo --since "12 months ago" --exclude "
 After generating a hotspots report, use the analysis script to get detailed refactoring recommendations:
 
 ```bash
-node hotspots-analyze.js --input hotspots.json --output analysis.md --workspace /path/to/repo
+hotspotter-analyze --input hotspots.json --output analysis.md --workspace /path/to/repo
 ```
 
 The analysis script uses the Cursor Agent to analyze the hotspots data and provides structured, textual output saved to a markdown file. The generated report follows a strict format with 13 mandatory sections:
@@ -198,13 +201,13 @@ The analysis script uses the Cursor Agent to analyze the hotspots data and provi
 12. **Systemic Issues Identified** — Patterns and architectural concerns
 13. **How to use this report** — Guidance on using different sections and re-running periodically
 
-Each section (except Title) includes an audience note (*Audience: EMs / PMs* or *Audience: Staff Engineers / Tech Leads*) to help readers navigate the report. Authorship is stated in two places: (1) front matter right under the title (Author, Role, Scope, Methodology, Intended audience); (2) an "Authorship" note at the end of About This Report, in third-person factual language, tying the author's name to judgment and accountability.
+Each section (except Title) includes an audience note (_Audience: EMs / PMs_ or _Audience: Staff Engineers / Tech Leads_) to help readers navigate the report. Authorship is stated in two places: (1) front matter right under the title (Author, Role, Scope, Methodology, Intended audience); (2) an "Authorship" note at the end of About This Report, in third-person factual language, tying the author's name to judgment and accountability.
 
 The agent reads the actual source code files to provide code-aware recommendations based on implementation details, not just metadata. The report emphasizes business framing, avoids blame, and frames findings as system problems rather than team failures.
 
 ### Analysis Script Arguments
 
-- `--input <file>` (required): Path to the JSON output file from hotspots-report
+- `--input <file>` (required): Path to the JSON output file from Hotspotter
 - `--output <file>` (required): Path to the output markdown file for the analysis
 - `--workspace <path>` (optional): Workspace directory for context
 - `--model <model>` (optional): AI model to use for analysis
