@@ -26,7 +26,7 @@ The tool operates in two main phases:
 
 ### Phase 2: AI-Powered Refactoring Recommendations
 
-A separate analysis script (`hotspotter-analyze`) uses an AI agent to produce refactoring recommendations from the Phase 1 output. See the [AI Analysis](ai-analysis) spec.
+Report generation is triggered by the optional `--report` flag. When `--report` is set, after Phase 1 the same analysis logic (AI agent, prompt, report format) runs and writes the markdown report. See the [AI Analysis](ai-analysis) spec. There is no separate `hotspotter-analyze` binary.
 
 ## Hotspot Detection Method
 
@@ -131,7 +131,8 @@ This analysis helps identify:
 - `--percentage <number>` (optional): Percentage threshold for hotspot selection (default: 10)
 - `--limit <number>` (optional): Maximum number of results to include in the analysis (default: 30)
 - `--coupling-threshold <number>` (optional): Minimum coupling count to include in coupling results (default: 5). Set to 0 to disable filtering and include all couplings.
-- `--output <file>` (optional): Output file path for JSON results. If not specified, results are displayed as CSV in the console.
+- `--output <file>` (optional): When `--report` is not set: path for JSON results (if not specified, results are displayed as CSV in the console). When `--report` is set: base path for both outputs—JSON is written to `{base}.json` and the report to `{base}.md` (any extension on the path is stripped to form the base). `--output` is required when `--report` is set.
+- `--report` (optional): After data gathering, run report generation and write both JSON and report (requires `--output`).
 - `--exclude <pattern>` (optional): Regex pattern to exclude files from analysis. Can be specified multiple times to exclude multiple patterns. Files matching any of the patterns will be filtered out before analysis.
 
 ## Usage Example
@@ -170,4 +171,10 @@ Exclude files matching patterns:
 
 ```bash
 hotspotter --path /path/to/repo --since "12 months ago" --exclude "\.lock$" --exclude "\.json$" --exclude "node_modules/"
+```
+
+Run data gathering and report generation (writes `report.json` and `report.md`):
+
+```bash
+hotspotter --path /path/to/repo --since "12 months ago" --report --output report
 ```
