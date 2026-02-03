@@ -15,15 +15,15 @@ export function parseArgs(options: any): HotspotArgs {
   const couplingThreshold = parseInt(options.couplingThreshold, 10);
 
   if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
-    throw new Error('Percentage must be a number between 1 and 100');
+    throw new Error("Percentage must be a number between 1 and 100");
   }
 
   if (isNaN(limit) || limit <= 0) {
-    throw new Error('Limit must be a positive number');
+    throw new Error("Limit must be a positive number");
   }
 
   if (isNaN(couplingThreshold) || couplingThreshold < 0) {
-    throw new Error('Coupling threshold must be a non-negative number');
+    throw new Error("Coupling threshold must be a non-negative number");
   }
 
   // Validate and compile exclude regex patterns
