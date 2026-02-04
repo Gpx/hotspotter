@@ -3,9 +3,10 @@
 import { Command } from "commander";
 import { writeFile } from "fs/promises";
 import { analyzeHotspots } from "./analyzer.js";
-import { parseArgs } from "./args.js";
+import { parseArgs, getReportOutputPaths } from "./args.js";
 import { formatAsTable } from "./formatter.js";
 import { resolveDateRange, getCommitRangeForRange } from "./dateResolver.js";
+import { runAnalysis } from "./analyze.js";
 
 const program = new Command();
 
@@ -37,6 +38,10 @@ program
     "Output file path for JSON results (if not specified, outputs table to console)"
   )
   .option(
+    "--report",
+    "After data gathering, run report generation and write both JSON and report (requires --output)"
+  )
+  .option(
     "--exclude <pattern>",
     "Regex pattern to exclude files (can be specified multiple times)",
     (value, previous: string[] = []) => {
@@ -44,52 +49,79 @@ program
       return previous;
     }
   )
-  .action(async (options) => {
-    try {
-      const args = parseArgs(options);
-      const results = await analyzeHotspots(args);
-
-      if (args.output) {
-        // Resolve actual date range and commit range from git
-        const [dateRange, commitRange] = await Promise.all([
-          resolveDateRange(args.since, args.until, args.path),
-          getCommitRangeForRange(args.since, args.until, args.path),
-        ]);
-
-        // Write JSON to file with metadata
-        const output = {
-          arguments: {
-            path: args.path,
-            timeRange: {
-              since: dateRange.since,
-              until: dateRange.until,
-              ...(commitRange.startCommit && {
-                startCommit: commitRange.startCommit,
-              }),
-              ...(commitRange.endCommit && {
-                endCommit: commitRange.endCommit,
-              }),
-            },
-            percentage: args.percentage,
-            limit: args.limit,
-            couplingThreshold: args.couplingThreshold,
-            exclude: args.exclude,
-          },
-          results: results,
-        };
-        await writeFile(args.output, JSON.stringify(output, null, 2), "utf-8");
-        console.error(`Results written to ${args.output}`);
-      } else {
-        // Output as CSV to console
-        console.log(formatAsTable(results));
-      }
-    } catch (error) {
+  .action((options) =>
+    runHotspotter(options).catch((error) => {
       console.error(
         "Error:",
         error instanceof Error ? error.message : String(error)
       );
       process.exit(1);
-    }
-  });
+    })
+  );
 
-program.parse();
+if (typeof process !== "undefined" && !process.env.VITEST) {
+  program.parse();
+}
+
+export type HotspotterOptions = Record<string, unknown>;
+
+/**
+ * Run the hotspotter workflow (data gathering and optionally report generation).
+ * Exported for testing.
+ */
+export async function runHotspotter(options: HotspotterOptions): Promise<void> {
+  if (options.report && !options.output) {
+    console.error(
+      "Error: --report requires --output (base path for JSON and report)"
+    );
+    throw new Error("--report requires --output");
+  }
+  const args = parseArgs(options);
+  const results = await analyzeHotspots(args);
+
+  const [dateRange, commitRange] = await Promise.all([
+    resolveDateRange(args.since, args.until, args.path),
+    getCommitRangeForRange(args.since, args.until, args.path),
+  ]);
+
+  const outputPayload = {
+    arguments: {
+      path: args.path,
+      timeRange: {
+        since: dateRange.since,
+        until: dateRange.until,
+        ...(commitRange.startCommit && {
+          startCommit: commitRange.startCommit,
+        }),
+        ...(commitRange.endCommit && {
+          endCommit: commitRange.endCommit,
+        }),
+      },
+      percentage: args.percentage,
+      limit: args.limit,
+      couplingThreshold: args.couplingThreshold,
+      exclude: args.exclude,
+    },
+    results: results,
+  };
+
+  if (args.report && args.output) {
+    const { jsonPath, reportPath } = getReportOutputPaths(args.output);
+    await writeFile(
+      jsonPath,
+      JSON.stringify(outputPayload, null, 2),
+      "utf-8"
+    );
+    console.error(`Results written to ${jsonPath}`);
+    await runAnalysis(jsonPath, reportPath, args.path);
+  } else if (args.output) {
+    await writeFile(
+      args.output,
+      JSON.stringify(outputPayload, null, 2),
+      "utf-8"
+    );
+    console.error(`Results written to ${args.output}`);
+  } else {
+    console.log(formatAsTable(results));
+  }
+}

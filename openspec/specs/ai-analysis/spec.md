@@ -1,23 +1,24 @@
-# AI Analysis (hotspotter-analyze)
+# AI Analysis
 
 ## Overview
 
-After generating a hotspots report with the main Hotspotter CLI, the `hotspotter-analyze` script uses an AI agent to produce human-readable refactoring recommendations. It reads the JSON output from Hotspotter, analyzes hotspot clusters and coupling relationships, and writes a structured markdown report.
+Report generation is triggered by running the single `hotspotter` command with the `--report` flag. The same analysis logic (AI agent, prompt, report format) runs when `--report` is set: hotspot data JSON is written to the path derived from `--output`, and the agent reads that file and writes the structured markdown report to the derived report path. There is no separate `hotspotter-analyze` binary.
 
 ## Workflow
 
-The script:
+When the user runs `hotspotter --report --output <base> ...`:
 
-1. Reads the JSON output from the main Hotspotter tool (Phase 1)
-2. Analyzes hotspot clusters and coupling relationships
-3. Generates human-readable refactoring recommendations
-4. Identifies high-risk areas and priority refactoring opportunities
+1. Data gathering runs and JSON is written to `{base}.json`
+2. The AI agent runs with that JSON path and workspace from `--path`
+3. The markdown report is written to `{base}.md` with the same format and sections as before
 
 ## Invocation
 
 ```bash
-hotspotter-analyze --input hotspots.json --output analysis.md --workspace /path/to/repo
+hotspotter --path /path/to/repo --since "12 months ago" --report --output report
 ```
+
+This writes `report.json` and `report.md`.
 
 ## Report Format
 
@@ -43,7 +44,4 @@ The agent reads the actual source code files to provide code-aware recommendatio
 
 ## Command-Line Arguments
 
-- `--input <file>` (required): Path to the JSON output file from Hotspotter
-- `--output <file>` (required): Path to the output markdown file for the analysis
-- `--workspace <path>` (optional): Workspace directory for context
-- `--model <model>` (optional): AI model to use for analysis
+Report generation uses the same arguments as the main `hotspotter` command. When `--report` is set, `--path` is the workspace (repository) for the agent, and `--output` is the base path for both the hotspot data JSON and the report markdown (see [Hotspotter](hotspotter) spec).

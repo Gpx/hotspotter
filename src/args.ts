@@ -6,7 +6,23 @@ export interface HotspotArgs {
   limit: number;
   couplingThreshold: number;
   output?: string;
+  report?: boolean;
   exclude?: string[];
+}
+
+/**
+ * When --report is set, --output is a base path. Returns paths for JSON and report.
+ * Strips any extension from outputPath to form the base (e.g. "report.md" -> base "report").
+ */
+export function getReportOutputPaths(outputPath: string): {
+  jsonPath: string;
+  reportPath: string;
+} {
+  const base = outputPath.replace(/\.[^/.]+$/, "") || outputPath;
+  return {
+    jsonPath: `${base}.json`,
+    reportPath: `${base}.md`,
+  };
 }
 
 export function parseArgs(options: any): HotspotArgs {
@@ -44,6 +60,7 @@ export function parseArgs(options: any): HotspotArgs {
     limit,
     couplingThreshold,
     output: options.output,
+    report: options.report === true,
     exclude: excludePatterns.length > 0 ? excludePatterns : undefined,
   };
 }

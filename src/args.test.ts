@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseArgs } from "./args.js";
+import { parseArgs, getReportOutputPaths } from "./args.js";
 
 describe("parseArgs", () => {
   describe("valid options", () => {
@@ -19,8 +19,35 @@ describe("parseArgs", () => {
         limit: 30,
         couplingThreshold: 5,
         output: undefined,
+        report: false,
         exclude: undefined,
       });
+    });
+
+    it("sets report true when options.report is true", () => {
+      const result = parseArgs({
+        path: "/repo",
+        since: "12 months ago",
+        percentage: "10",
+        limit: "30",
+        couplingThreshold: "5",
+        report: true,
+        output: "report",
+      });
+      expect(result.report).toBe(true);
+      expect(result.output).toBe("report");
+    });
+
+    it("sets report false when options.report is absent", () => {
+      const result = parseArgs({
+        path: "/repo",
+        since: "12 months ago",
+        percentage: "10",
+        limit: "30",
+        couplingThreshold: "5",
+        output: "out.json",
+      });
+      expect(result.report).toBe(false);
     });
 
     it("parses percentage, limit, couplingThreshold as numbers", () => {
@@ -138,5 +165,25 @@ describe("parseArgs", () => {
         })
       ).toThrow("Invalid regex pattern: [invalid");
     });
+  });
+});
+
+describe("getReportOutputPaths", () => {
+  it("strips extension and returns .json and .md paths", () => {
+    const { jsonPath, reportPath } = getReportOutputPaths("report.md");
+    expect(jsonPath).toBe("report.json");
+    expect(reportPath).toBe("report.md");
+  });
+
+  it("uses path as base when it has no extension", () => {
+    const { jsonPath, reportPath } = getReportOutputPaths("out");
+    expect(jsonPath).toBe("out.json");
+    expect(reportPath).toBe("out.md");
+  });
+
+  it("strips extension and preserves directory", () => {
+    const { jsonPath, reportPath } = getReportOutputPaths("dir/report.md");
+    expect(jsonPath).toBe("dir/report.json");
+    expect(reportPath).toBe("dir/report.md");
   });
 });
