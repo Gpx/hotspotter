@@ -20,11 +20,12 @@ describe("parseArgs", () => {
         couplingThreshold: 5,
         output: undefined,
         report: false,
+        model: undefined,
         exclude: undefined,
       });
     });
 
-    it("sets report true when options.report is true", () => {
+    it("sets report true and model when options.report and options.model are set", () => {
       const result = parseArgs({
         path: "/repo",
         since: "12 months ago",
@@ -33,9 +34,11 @@ describe("parseArgs", () => {
         couplingThreshold: "5",
         report: true,
         output: "report",
+        model: "openai:gpt-4o",
       });
       expect(result.report).toBe(true);
       expect(result.output).toBe("report");
+      expect(result.model).toBe("openai:gpt-4o");
     });
 
     it("sets report false when options.report is absent", () => {

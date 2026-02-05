@@ -7,6 +7,7 @@ export interface HotspotArgs {
   couplingThreshold: number;
   output?: string;
   report?: boolean;
+  model?: string;
   exclude?: string[];
 }
 
@@ -61,6 +62,7 @@ export function parseArgs(options: any): HotspotArgs {
     couplingThreshold,
     output: options.output,
     report: options.report === true,
+    model: options.model,
     exclude: excludePatterns.length > 0 ? excludePatterns : undefined,
   };
 }

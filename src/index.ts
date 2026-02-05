@@ -42,6 +42,10 @@ program
     "After data gathering, run report generation and write both JSON and report (requires --output)"
   )
   .option(
+    "--model <model-id>",
+    "Model for report (required when --report). Format: provider:model (e.g. openai:gpt-4o, anthropic:claude-sonnet-4-5). Set OPENAI_API_KEY or ANTHROPIC_API_KEY"
+  )
+  .option(
     "--exclude <pattern>",
     "Regex pattern to exclude files (can be specified multiple times)",
     (value, previous: string[] = []) => {
@@ -76,6 +80,13 @@ export async function runHotspotter(options: HotspotterOptions): Promise<void> {
     );
     throw new Error("--report requires --output");
   }
+  if (
+    options.report &&
+    (!options.model || String(options.model).trim() === "")
+  ) {
+    console.error("Error: --model is required when using --report");
+    throw new Error("--model is required when using --report");
+  }
   const args = parseArgs(options);
   const results = await analyzeHotspots(args);
 
@@ -107,13 +118,9 @@ export async function runHotspotter(options: HotspotterOptions): Promise<void> {
 
   if (args.report && args.output) {
     const { jsonPath, reportPath } = getReportOutputPaths(args.output);
-    await writeFile(
-      jsonPath,
-      JSON.stringify(outputPayload, null, 2),
-      "utf-8"
-    );
+    await writeFile(jsonPath, JSON.stringify(outputPayload, null, 2), "utf-8");
     console.error(`Results written to ${jsonPath}`);
-    await runAnalysis(jsonPath, reportPath, args.path);
+    await runAnalysis(jsonPath, reportPath, args.path, args.model!);
   } else if (args.output) {
     await writeFile(
       args.output,

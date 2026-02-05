@@ -2,60 +2,65 @@ You are analyzing a code hotspots report to identify refactoring opportunities. 
 
 **Format requirement**: Your report MUST include every section in "Required Output Format" below — all 13 sections, in order. None of the sections may be skipped. Every section (except Title) must have an _Audience: ..._ line directly under its heading.
 
-## First Step: Read the Hotspots Data
+## Tools
 
-**IMPORTANT**: Start by reading the hotspots report JSON file located at:
-{{INPUT_FILE_PATH}}
+You have two tools:
 
-This file contains all the hotspot analysis data including:
+1. **read_report** — Call this first (no arguments). It returns the hotspot report JSON. Use it to get the analysis data (arguments, results, coupling).
+2. **read_file** — Use it to read source files from the repository. Pass the path as it appears in the report (relative to the repository root), e.g. `src/foo.ts`, `apps/tk-checkout/package.json`.
+
+**Strategy**: Call **read_report** to get the hotspot data, identify key files from the results, then call **read_file** for those files so your report is based on real code and metrics.
+
+## First Step: Get the Hotspots Data
+
+**IMPORTANT**: The hotspot report is at {{INPUT_FILE_PATH}}. Call the **read_report** tool (no arguments) to get the full JSON. Do not ask the user to open files — use the tool.
+
+The report JSON contains:
 
 - Analysis time period and repository information (in the `arguments` object)
-- Optional start and end commit hashes for the analysis range (`arguments.timeRange.startCommit`, `arguments.timeRange.endCommit`) when available
-- List of hotspot files with modification counts, lines of code, and optional `scores` (changeFrequency, loc, coupling as High/Medium/Low)
+- Optional start and end commit hashes (`arguments.timeRange.startCommit`, `arguments.timeRange.endCommit`) when available
+- List of hotspot files with modification counts, lines of code, and optional `scores`
 - Coupling relationships between files
-- All metadata needed for the analysis
 
-Read this file first to understand what you're analyzing. Extract the following information from the JSON file:
+From the data you get from **read_report**, extract:
 
 - Repository path (from `arguments.path`)
 - Time range (from `arguments.timeRange.since` and `arguments.timeRange.until`)
-- Start and end commit hashes when present (from `arguments.timeRange.startCommit` and `arguments.timeRange.endCommit`)
+- Start and end commit hashes when present
 - Analysis parameters (percentage threshold, limit, coupling threshold, exclude patterns)
 
 ## Your Analysis Task
 
-**IMPORTANT: You must read both the JSON data file AND the actual source code files to perform this analysis.**
+**IMPORTANT: Call read_report first, then use read_file for source files.** Use the report data to find hotspot and coupled file paths, then call **read_file** to read those source files so your analysis is based on actual code, not only metrics.
 
-1. **First**: Read the hotspots report JSON file at {{INPUT_FILE_PATH}} to understand the hotspot data
-2. **Then**: Read the actual source code files mentioned in the hotspots to understand:
-   - What the code actually does
-   - Code structure and organization
-   - Dependencies and relationships
-   - Code smells and anti-patterns
-   - Specific refactoring opportunities
+1. **First**: Call **read_report** to get the hotspot report JSON and identify key files.
+2. **Then**: Use **read_file** to read the source code of hotspot files and their strongly coupled files. Analyze:
+   - What the code does and how it is structured
+   - Dependencies and relationships visible in the code
+   - Code smells, complexity, and refactoring opportunities
 
-For each hotspot file and its strongly coupled files, read the file contents to understand the implementation details.
+For each significant hotspot cluster, read the relevant files with **read_file** and base your recommendations on the code you see.
 
 Analyze the hotspots and coupling relationships to identify refactoring opportunities. Focus on:
 
-1. **Hotspot Clusters**: Identify groups of files that are frequently changed together (high coupling). Read the actual code in these files to understand:
+1. **Hotspot Clusters**: Identify groups of files that are frequently changed together (high coupling). Use **read_file** to read the code in these files and understand:
    - What functionality they implement together
    - How they interact and depend on each other
    - Why they are frequently changed together (shared responsibilities, tight coupling, etc.)
 
 2. **Refactoring Opportunities**: For each significant cluster, after reading the code:
    - Describe what the cluster represents (e.g., "Payment processing module", "User authentication flow", "Data transformation layer")
-   - Explain why these files are frequently changed together based on the actual code
+   - Explain why these files are frequently changed together based on the code
    - Provide specific, actionable refactoring recommendations based on the code structure you observe
    - Suggest concrete improvements (extract functions, create abstractions, consolidate logic, etc.)
 
-3. **High-Risk Areas**: Identify files that are particularly problematic. Read these files to assess:
+3. **High-Risk Areas**: Identify files that are particularly problematic. Use **read_file** to assess:
    - High modification count AND high lines of code (complex files that change frequently)
    - Strong coupling with many other files (indicating tight dependencies or lack of proper abstraction)
    - Code complexity, maintainability issues, and technical debt visible in the code
    - **Business framing**: For each high-risk file, include at least one sentence on revenue risk, onboarding cost, and/or change failure blast radius (e.g. "A bug here affects checkout; failure blast radius is high")
 
-4. **Systemic Issues Identified**: After reading multiple files, identify:
+4. **Systemic Issues Identified**: After reading the relevant files, identify:
    - Common patterns in coupling relationships
    - Architectural concerns or technical debt indicators visible in the code
    - Recommendations for improving code organization based on actual code structure
@@ -282,14 +287,14 @@ Keep it brief. The goal is to tell readers how to act on the report and that it 
 
 ## Important Guidelines
 
-- **Read the files**: You must read the actual source code files to provide meaningful analysis. Start by reading the hotspot files and their strongly coupled files.
+- **Read the files**: Use the **read_file** tool to read the actual source code of hotspot and coupled files. Base your analysis on both the JSON metrics and the code you read.
 - Be specific: Reference actual file paths, code patterns, and coupling counts from the data
 - Be actionable: Provide concrete, implementable recommendations based on what you see in the code
 - Be concise: Keep descriptions clear and focused
 - Focus on refactoring opportunities: Identify where code organization can be improved based on actual code structure
 - Consider coupling strength: Strong coupling (high counts) indicates tighter relationships - read the code to understand why
 - Consider file complexity: High LOC + high modifications = higher refactoring priority - examine the code to see what makes it complex
-- Code-based insights: Base your recommendations on actual code patterns, not just metadata
+- Code-based insights: Base your recommendations on actual code patterns and the metrics; use **read_file** to inspect the code
 - Use the scoring model: Show High/Medium/Low badges (change frequency, LOC, coupling from the analysis data; business criticality from code). In the report, explain how the metrics were generated (git history, line counts, co-change analysis), not the JSON file. Explicit scores justify prioritization and reduce bikeshedding
 - Audience notes: Include the italic _Audience: EMs / PMs_ or _Audience: Staff Engineers / Tech Leads_ line under each section heading (except Title) so readers know who the section is for and can skip "too technical" or "too high-level" sections
 - What not to do: Always include the "What not to do" section with the three explicit constraints (no rewrite from scratch, no blocking feature work, no convert-everything-to-X in one go). State it clearly so the report cannot be cited later to justify big rewrites, feature freezes, or all-at-once migrations
@@ -300,21 +305,16 @@ Keep it brief. The goal is to tell readers how to act on the report and that it 
 
 ## Analysis Steps
 
-1. Start by reading the JSON file at {{INPUT_FILE_PATH}} to understand the hotspot data
-2. Then read the hotspot files listed in the data
-3. For files with strong coupling, read the coupled files to understand relationships
-4. Analyze the code structure, dependencies, and patterns
-5. Provide recommendations based on what you observe in the actual code
+1. Call **read_report** to get the hotspot report JSON
+2. Identify the key hotspot files and their strongly coupled files from the data
+3. Use **read_file** to read those source files and analyze the code
+4. Identify clusters, high-risk areas, and systemic issues from the code and metrics
+5. Write the full report with all 13 sections, using the code you read to support your recommendations
 
 ## Important: After completing your analysis
 
 Before saving, **verify your report includes all 13 sections — none may be skipped** — and an _Audience: ..._ line under every section heading except the Title. If any section or any audience line is missing, add it before saving.
 
-Once you have finished your analysis and displayed it to the user, you should:
+The tool will save your response directly to {{OUTPUT_FILE_PATH}}. Your reply MUST be the complete report with every mandatory section and every audience line — no preamble asking to save; the full report is the only output.
 
-1. Ask the user if they would like to save the analysis to a file
-2. If they confirm, save the complete analysis (including all sections) to: {{OUTPUT_FILE_PATH}}
-
-You can use the write tool to save the file. The saved file MUST contain the full report with every mandatory section and every audience line.
-
-Begin your analysis by reading the JSON file and hotspot files now.
+Begin by calling **read_report** to get the hotspot data, then use **read_file** to read the source files you need before writing the report.

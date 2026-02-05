@@ -30,7 +30,9 @@ Or from the project directory: `node dist/index.js --path <repo-path> --since <d
 - `--percentage <number>`: Percentage threshold for hotspot selection (default: 10)
 - `--limit <number>`: Maximum number of results to include (default: 30)
 - `--coupling-threshold <number>`: Minimum coupling count to include in results (default: 5, set to 0 to disable filtering)
-- `--output <file>`: Output file path for JSON results. If not specified, results are displayed as CSV in the console.
+- `--output <file>`: Output file path for JSON results. If not specified, results are displayed as CSV in the console. When using `--report`, this is the base path for both JSON and the markdown report (e.g. `--output report` writes `report.json` and `report.md`).
+- `--report`: After data gathering, run AI report generation and write both JSON and report. Requires `--output` and `--model`.
+- `--model <model-id>`: Model for report generation (required when using `--report`). Use format `provider:model`, e.g. `openai:gpt-4o` or `anthropic:claude-sonnet-4-5`. Supported providers: OpenAI, Anthropic. Each provider uses its own API key (see below).
 - `--exclude <pattern>`: Regex pattern to exclude files from analysis. Can be specified multiple times to exclude multiple patterns.
 
 ### Output Format
@@ -74,40 +76,23 @@ Exclude files matching patterns:
 node dist/index.js --path /path/to/repo --since "12 months ago" --exclude "\.lock$" --exclude "\.json$" --exclude "node_modules/"
 ```
 
-## Analysis with AI Agent
+### Report generation (AI)
 
-After generating a report, you can use the AI analysis script to get detailed refactoring recommendations:
+With `--report`, hotspotter writes the JSON and an AI-generated markdown report. You must pass `--model` in the form `provider:model` (e.g. `openai:gpt-4o`, `anthropic:claude-sonnet-4-5`). There is no default model.
 
-```bash
-hotspotter-analyze --input hotspots.json --output analysis.md
-```
+**Environment variables (API keys):** Each provider uses its own key. Set the one for the provider you use:
 
-Or: `node dist/analyze.js --input hotspots.json --output analysis.md`
+- **OpenAI:** `OPENAI_API_KEY`
+- **Anthropic:** `ANTHROPIC_API_KEY`
 
-### Analysis Script Arguments
-
-- `--input <file>` (required): Path to the JSON output file from Hotspotter
-- `--output <file>` (required): Path to the output markdown file for the analysis
-- `--workspace <path>` (optional): Workspace directory (repository path) for context. Defaults to current directory or the path from the JSON file.
-- `--model <model>` (optional): Model to use for analysis (e.g., "gpt-5", "sonnet-4")
-
-### Example
+Example:
 
 ```bash
-# Generate hotspots report
-node dist/index.js --path /path/to/repo --since "12 months ago" --output hotspots.json
-
-# Analyze the report with AI and save to markdown
-node dist/analyze.js --input hotspots.json --output analysis.md --workspace /path/to/repo
+# Generate hotspots data and AI report (requires OPENAI_API_KEY or ANTHROPIC_API_KEY)
+node dist/index.js --path /path/to/repo --since "12 months ago" --report --output report --model openai:gpt-4o
 ```
 
-The analysis script uses the Cursor Agent to analyze the hotspots data and provides:
-
-- Hotspot clusters (groups of files changed together)
-- Refactoring opportunities with specific recommendations
-- High-risk areas identification
-- Patterns and insights about code organization
-- Priority recommendations for refactoring
+This writes `report.json` and `report.md`. The report includes hotspot clusters, refactoring recommendations, high-risk areas, and priority recommendations.
 
 ## Development
 
@@ -123,4 +108,4 @@ npm run build
 
 - Node.js
 - Git
-- Cursor Agent (for analysis script) - install with `npm install -g @cursor/agent` or use the Cursor IDE
+- For report generation (`--report`): an API key for your chosen provider (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`)
