@@ -1,71 +1,123 @@
-import { readFile } from "fs/promises";
-import { spawn } from "child_process";
+import { writeFile, readFile } from "fs/promises";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
+import { generateText, tool } from "ai";
+import { z } from "zod";
+import { resolveModel, getEnvVarForProvider } from "./modelRegistry.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/** Maximum steps for tool-augmented report generation (read_report + read_file calls + final report). */
+const MAX_ANALYSIS_STEPS = 25;
+
 /**
- * Run report generation: spawn the AI agent to read the hotspot data JSON and write the report.
- * Used when hotspotter is invoked with --report.
+ * Create a read_report tool that returns the hotspot report JSON. Call this first to get the data.
+ */
+function createReadReportTool(reportJsonPath: string) {
+  return tool({
+    description:
+      "Read the hotspot report JSON. Call this first to get the analysis data (arguments, results, coupling). Use the returned data to identify which repository files to read with read_file.",
+    parameters: z.object({}),
+    execute: async () => {
+      try {
+        const content = await readFile(reportJsonPath, "utf-8");
+        return { content };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return { error: `Failed to read report: ${message}` };
+      }
+    },
+  });
+}
+
+/**
+ * Create a read_file tool that reads files from the repository. Paths are relative to workspacePath.
+ * Resolves path safely and rejects reads outside the workspace.
+ */
+function createReadFileTool(workspacePath: string) {
+  const workspaceRoot = resolve(workspacePath);
+  return tool({
+    description:
+      "Read the contents of a source file in the repository. Use the file path as it appears in the hotspot JSON (relative to the repository root, e.g. 'src/foo.ts' or 'apps/tk-checkout/package.json').",
+    parameters: z.object({
+      path: z
+        .string()
+        .describe(
+          "File path relative to repository root (e.g. src/analyze.ts, package.json)"
+        ),
+    }),
+    execute: async ({ path: filePath }, _options) => {
+      const normalized = resolve(workspaceRoot, filePath);
+      if (!normalized.startsWith(workspaceRoot)) {
+        return { error: `Path is outside repository: ${filePath}` };
+      }
+      try {
+        const content = await readFile(normalized, "utf-8");
+        return { content };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return { error: `Failed to read ${filePath}: ${message}` };
+      }
+    },
+  });
+}
+
+/**
+ * Run report generation: call the AI SDK with the given model to produce the report from
+ * hotspot data, then write the result to the output path. Used when hotspotter is invoked with --report.
+ * The model can use the read_file tool to read source files from the repository (workspacePath).
  */
 export async function runAnalysis(
   inputFilePath: string,
   outputFilePath: string,
-  workspacePath: string
+  workspacePath: string,
+  modelId: string
 ): Promise<void> {
   const absoluteInputPath = resolve(inputFilePath);
   const prompt = await createAnalysisPrompt(absoluteInputPath, outputFilePath);
+  const model = resolveModel(modelId);
+  const tools = {
+    read_report: createReadReportTool(absoluteInputPath),
+    read_file: createReadFileTool(workspacePath),
+  };
 
-  const agentArgs = ["--workspace", workspacePath, prompt];
-
-  console.error("Starting AI agent in interactive mode...");
-  console.error(
-    "The agent will analyze the hotspots and ask if you want to save the results.\n"
-  );
-
-  return new Promise<void>((resolvePromise, reject) => {
-    const agentProcess = spawn("agent", agentArgs, {
-      stdio: ["inherit", "inherit", "inherit"],
+  try {
+    console.error("Generating report with AI...");
+    const { text } = await generateText({
+      model,
+      prompt,
+      tools,
+      maxSteps: MAX_ANALYSIS_STEPS,
     });
-
-    agentProcess.on("close", (code) => {
-      if (code === 0) {
-        resolvePromise();
-      } else {
-        reject(new Error(`Agent process exited with code ${code}`));
-      }
-    });
-
-    agentProcess.on("error", (error) => {
-      console.error("\n✗ Error starting agent process:");
-      console.error(`  ${error.message}`);
-
-      if (
-        error.message.includes("ENOENT") ||
-        error.message.includes("spawn")
-      ) {
-        console.error(
-          '\n  This usually means the "agent" command is not found.'
-        );
-        console.error(
-          "  Make sure Cursor Agent is installed and available in your PATH."
-        );
-        console.error(
-          "  You may need to install it or add it to your PATH."
-        );
-      }
-
-      reject(new Error(`Failed to start agent: ${error.message}`));
-    });
-  });
+    await writeFile(outputFilePath, text, "utf-8");
+    console.error(`Report written to ${outputFilePath}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const provider = modelId.trim().split(":")[0]?.toLowerCase();
+    if (
+      provider &&
+      (message.includes("401") ||
+        message.includes("API key") ||
+        message.includes("authentication") ||
+        message.includes("Invalid API key") ||
+        message.includes("API key not found"))
+    ) {
+      const envVar = getEnvVarForProvider(provider);
+      console.error(`\n✗ ${message}`);
+      console.error(`  Set ${envVar} for the ${provider} provider.`);
+      throw new Error(
+        `${message}. Set ${envVar} for the ${provider} provider.`
+      );
+    }
+    throw error;
+  }
 }
 
 async function createAnalysisPrompt(
   inputFilePath: string,
   outputFilePath: string
 ): Promise<string> {
-  const promptPath = join(__dirname, "..", "src", "prompt.md");
+  const promptPath = join(__dirname, "prompt.md");
   const template = await readFile(promptPath, "utf-8");
   return template
     .replace(/\{\{INPUT_FILE_PATH\}\}/g, inputFilePath)

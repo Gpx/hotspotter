@@ -26,7 +26,7 @@ The tool operates in two main phases:
 
 ### Phase 2: AI-Powered Refactoring Recommendations
 
-Report generation is triggered by the optional `--report` flag. When `--report` is set, after Phase 1 the same analysis logic (AI agent, prompt, report format) runs and writes the markdown report. See the [AI Analysis](ai-analysis) spec. There is no separate `hotspotter-analyze` binary.
+Report generation is triggered by the optional `--report` flag. When `--report` is set, the user MUST also provide `--model <model-id>` (e.g. `openai:gpt-4o`). After Phase 1, the system invokes the AI SDK with the specified model and writes the markdown report directly to `{base}.md`. See the [AI Analysis](ai-analysis) spec. There is no separate `hotspotter-analyze` binary.
 
 ## Hotspot Detection Method
 
@@ -132,8 +132,30 @@ This analysis helps identify:
 - `--limit <number>` (optional): Maximum number of results to include in the analysis (default: 30)
 - `--coupling-threshold <number>` (optional): Minimum coupling count to include in coupling results (default: 5). Set to 0 to disable filtering and include all couplings.
 - `--output <file>` (optional): When `--report` is not set: path for JSON results (if not specified, results are displayed as CSV in the console). When `--report` is set: base path for both outputs—JSON is written to `{base}.json` and the report to `{base}.md` (any extension on the path is stripped to form the base). `--output` is required when `--report` is set.
-- `--report` (optional): After data gathering, run report generation and write both JSON and report (requires `--output`).
+- `--report` (optional): After data gathering, run report generation and write both JSON and report (requires `--output` and `--model`).
+- `--model <model-id>` (optional): Model for report generation (required when `--report` is set). Format: `provider:model` (e.g. `openai:gpt-4o`, `anthropic:claude-sonnet-4-5`). There is no default; the user must set the appropriate provider API key (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`). When `--report` is not set, `--model` is not required and may be omitted or ignored.
 - `--exclude <pattern>` (optional): Regex pattern to exclude files from analysis. Can be specified multiple times to exclude multiple patterns. Files matching any of the patterns will be filtered out before analysis.
+
+## Requirements
+
+### Requirement: Report generation requires --model when --report is set
+
+When the user sets `--report`, the CLI SHALL require the `--model <model-id>` argument. The `--model` value SHALL identify the AI model used for report generation (e.g. `openai:gpt-4o`, `anthropic:claude-sonnet-4-5`). There SHALL be no default model when `--report` is set. All other report-related behavior (`--output` as base path for JSON and report, `--path` as workspace) remains unchanged.
+
+#### Scenario: Validation fails when --report is set without --model
+
+- **WHEN** the user invokes hotspotter with `--report` and `--output <path>` but does not provide `--model`
+- **THEN** the CLI SHALL exit with an error stating that `--model` is required when using `--report`
+
+#### Scenario: Validation succeeds when --report and --model are both provided
+
+- **WHEN** the user invokes hotspotter with `--report`, `--output <base>`, and `--model openai:gpt-4o`
+- **THEN** the CLI SHALL accept the arguments and proceed (report generation will use the given model subject to API key and runtime success)
+
+#### Scenario: --model is irrelevant when --report is not set
+
+- **WHEN** the user invokes hotspotter without `--report` (e.g. only `--path` and `--since`)
+- **THEN** the CLI SHALL NOT require `--model`; `--model` MAY be omitted or ignored when `--report` is not set
 
 ## Usage Example
 
@@ -173,8 +195,8 @@ Exclude files matching patterns:
 hotspotter --path /path/to/repo --since "12 months ago" --exclude "\.lock$" --exclude "\.json$" --exclude "node_modules/"
 ```
 
-Run data gathering and report generation (writes `report.json` and `report.md`):
+Run data gathering and report generation (writes `report.json` and `report.md`; requires `--model` and provider API key):
 
 ```bash
-hotspotter --path /path/to/repo --since "12 months ago" --report --output report
+hotspotter --path /path/to/repo --since "12 months ago" --report --output report --model openai:gpt-4o
 ```
